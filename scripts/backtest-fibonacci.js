@@ -67,7 +67,7 @@ function backtestFibonacci(bars, targetMode="ext027") {
   function close(bar, price, reason) {
     const p=position, R=p.side==="LONG"?(price-p.entry)/p.risk:(p.entry-price)/p.risk;
     trades.push({side:p.side,entryTime:new Date(p.entryTime).toISOString(),entry:p.entry,sl:p.origin,tp:p.tp,
-      exitTime:new Date(bar.time).toISOString(),exit:price,reason,R:Number(R.toFixed(4)),rr:Number(p.rr.toFixed(4)),
+      exitTime:new Date(bar.time+3600000).toISOString(),exit:price,reason,R:Number(R.toFixed(4)),rr:Number(p.rr.toFixed(4)),
       fibBreakDate:p.breakDate,targetMode});
     if(reason==="TP"&&p.targetZone) p.targetZone.used=true;
     position=null;
