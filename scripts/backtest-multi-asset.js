@@ -57,11 +57,11 @@ function main() {
   fs.mkdirSync(outputRoot,{recursive:true});
   const results = SYMBOLS.map(symbol=>loadSymbol(symbol,dataRoot));
   const output = {
-    title:"GoldPulse Lab — preliminary blue-zone multi-asset backtest",
+    title:"GoldPulse Lab — preliminary blue-zone and Fibonacci multi-asset backtest",
     source:"EV Trading Labs historical OHLCV catalogue, https://evtradelabs.com/data (free use with attribution)",
     period:"2021-01-01 through 2025-12-31",
-    method:"Daily structure derived from UTC H1 bars; confirmed 3-candle pivots; wick-only zones; H1 close-inside then later close-outside; one open trade at a time; 09:00–18:00 Europe/Rome entry window; SL at zone extreme; target nearest opposite virgin zone; breakeven activation at +1R; stop-first if SL and target touch same H1 candle; conservative breakeven if BE activation and target fall in same candle.",
-    limitations:["Blue-zone setup only; Fibonacci setup and overlap/split-size rules are not included.","No spread, commission, slippage or financing costs; results are gross and may be optimistic.","Historical index/commodity symbols are the data provider's instruments, not necessarily identical to the user's ActivTrades CFD contract.","This is a preliminary implementation, not a validated trading system; small trade counts are not statistically conclusive."],
+    method:"Daily structure approximated with a New York 17:00 trading-day boundary from H1 bars; confirmed 3-candle pivots; blue-zone and Fibonacci 61.8 setups backtested independently; 09:00–18:00 Europe/Rome entry window; blue-zone SL at zone extreme and BE at +1R; Fibonacci SL at origin swing extreme and BE at Fib level 0; conservative same-bar handling.",
+    limitations:["Blue-zone and Fibonacci setups are tested independently; overlap/split-size rules and a combined portfolio are not included.","The New York 17:00 daily boundary is a proxy until the exact ActivTrades server candle boundary is confirmed.","No spread, commission, slippage, financing costs or news calendar filter; results are gross and may be optimistic.","Historical instruments may differ from the users broker CFD contracts.","This is a preliminary implementation, not a validated trading system; small trade counts are not statistically conclusive."],
     results
   };
   fs.writeFileSync(path.join(outputRoot,"summary.json"),JSON.stringify(output,null,2));
@@ -81,8 +81,8 @@ function main() {
     fibSummaryRows.push([r.symbol,mode,f.fibEvents,f.closedTrades,f.wins,f.losses,f.breakevens,f.winRatePct??"",f.netR,f.avgR??"",f.profitFactor??"",f.maxDrawdownR].join(","));
     for(const t of f.trades) fibTradeRows.push([r.symbol,mode,t.side,t.entryTime,t.entry,t.sl,t.tp,t.exitTime,t.exit,t.reason,t.R,t.rr,t.fibBreakDate].join(","));
   }
-  fs.writeFileSync(path.join(outputRoot,"fibonacci-summary.csv"),fibSummaryRows.join("\\n")+"\\n");
-  fs.writeFileSync(path.join(outputRoot,"fibonacci-trades.csv"),fibTradeRows.join("\\n")+"\\n");
+  fs.writeFileSync(path.join(outputRoot,"fibonacci-summary.csv"),fibSummaryRows.join("\n")+"\n");
+  fs.writeFileSync(path.join(outputRoot,"fibonacci-trades.csv"),fibTradeRows.join("\n")+"\n");
   console.log(JSON.stringify({summaryCsv:path.join(outputRoot,"summary.csv"),tradesCsv:path.join(outputRoot,"trades.csv"),results:results.map(({symbol,dataBars,closedTrades,winRatePct,netR,profitFactor,maxClosedTradeDrawdownR,fibonacci})=>({symbol,dataBars,closedTrades,winRatePct,netR,profitFactor,maxClosedTradeDrawdownR,fibonacci:Object.fromEntries(Object.entries(fibonacci).map(([mode,f])=>[mode,{closedTrades:f.closedTrades,winRatePct:f.winRatePct,netR:f.netR,profitFactor:f.profitFactor,maxDrawdownR:f.maxDrawdownR}]))}))},null,2));
 }
 main();
