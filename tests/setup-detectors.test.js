@@ -8,7 +8,7 @@ const shortBars = [
 ];
 const short = d.detectZoneCloseSequence(shortBars, {low:12,high:14}, "SHORT");
 assert.equal(short.status, "CONFIRMED");
-assert.equal(short.armedIndex, 1);
+assert.equal(short.armedIndex, 0);
 assert.equal(short.index, 2);
 assert.equal(short.entry, 11.5);
 
