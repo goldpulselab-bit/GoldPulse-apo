@@ -1,0 +1,24 @@
+name: Probe free historical data endpoints
+on:
+  push:
+    branches:
+      - strategy-engine-prototype
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check candidate public data URLs
+        shell: bash
+        run: |
+          set +e
+          for url in \
+            "https://evtradelabs.com/data/XAUUSD/2024.json.gz" \
+            "https://evtradelabs.com/data/XAGUSD/2024.json.gz" \
+            "https://evtradelabs.com/data/DAX/2024.json.gz" \
+            "https://evtradelabs.com/data/DJ/2024.json.gz" \
+            "https://evtradelabs.com/data/NQ/2024.json.gz" \
+            "https://evtradelabs.com/data/SP500/2024.json.gz" \
+            "https://evtradelabs.com/data/WTI/2024.json.gz"; do
+            echo "URL=$url"
+            curl -L -sS --max-time 20 -o /dev/null -w "HTTP=%{http_code} TYPE=%{content_type} SIZE=%{size_download}\n" "$url"
+          done
