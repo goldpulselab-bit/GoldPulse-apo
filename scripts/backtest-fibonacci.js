@@ -47,6 +47,7 @@ function buildFibEvents(bars) {
   return events;
 }
 function backtestFibonacci(bars, targetMode="ext027") {
+  if (!["ext027","ext0618","oppositeZone"].includes(targetMode)) throw new Error("Unknown target mode: "+targetMode);
   const events=buildFibEvents(bars);
   const days=aggregateDaily(bars), {zones}=createZones(days);
   let eventIndex=0, fib=null, position=null;
