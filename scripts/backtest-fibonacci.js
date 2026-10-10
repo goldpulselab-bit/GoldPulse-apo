@@ -14,7 +14,7 @@ function buildFibEvents(bars) {
   const days=aggregateDaily(bars);
   const {swings}=createZones(days);
   const state=[];
-  let cursor=0;
+  let cursor=0, previousClose=null;
   const events=[];
   for (const day of days) {
     while(cursor<swings.length && swings[cursor].confirmDate<=day.date) {
@@ -31,17 +31,18 @@ function buildFibEvents(bars) {
     if(!highs.length||!lows.length) continue;
     const h=highs[highs.length-1], l=lows[lows.length-1];
     // A bullish structural break needs a confirmed low after the high being broken.
-    if(day.close>h.price && l.date>h.date) {
+    if(day.close>h.price && previousClose!==null && previousClose<=h.price && l.date>h.date) {
       const low=l.price, high=day.high, range=high-low;
       if(range>0) events.push({activationTime:day.closeTime,side:"LONG",low,high,origin:low,
         level618:high-range*0.618,level0:high,ext027:high+range*0.27,ext0618:high+range*0.618,
         breakDate:day.date});
-    } else if(day.close<l.price && h.date>l.date) {
+    } else if(day.close<l.price && previousClose!==null && previousClose>=l.price && h.date>l.date) {
       const high=h.price, low=day.low, range=high-low;
       if(range>0) events.push({activationTime:day.closeTime,side:"SHORT",low,high,origin:high,
         level618:low+range*0.618,level0:low,ext027:low-range*0.27,ext0618:low-range*0.618,
         breakDate:day.date});
     }
+    previousClose=day.close;
   }
   return events;
 }
