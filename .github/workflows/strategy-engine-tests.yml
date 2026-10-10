@@ -16,3 +16,4 @@ jobs:
           node-version: 20
       - run: node tests/strategy-engine.test.js
       - run: node tests/setup-detectors.test.js
+      - run: node tests/swing-resolver.test.js
