@@ -18,7 +18,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p data/XAUUSD/H1
-          for year in 2021 2022 2023 2024 2025; do
+          for year in 2021 2022 2023 2024 2025 2026; do
             url="https://evtradelabs.com/api/simulator/data/XAUUSD/H1/$year.json.gz"
             curl -fLsS --retry 2 --max-time 60 "$url" -o "/tmp/XAUUSD-$year.json.gz"
             gzip -dc "/tmp/XAUUSD-$year.json.gz" > "data/XAUUSD/H1/$year.json"
