@@ -126,13 +126,13 @@ function romeCloseHour(bar) {
 function runBacktest(bars, options={}) {
   const startHour=options.startHour ?? 9, endHour=options.endHour ?? 18;
   const days=aggregateDaily(bars), {zones,swings}=createZones(days);
-  const trades=[], rejected={outsideHours:0,noVirginTarget:0,invalidRR:0,wrongTrend:0};
+  const trades=[], rejected={outsideHours:0,noVirginTarget:0,invalidRR:0};
   let position=null, entries=0;
   function closePosition(bar,price,reason){
     const p=position;
     const resultR=p.side==="SHORT"?(p.entry-price)/p.risk:(price-p.entry)/p.risk;
     trades.push({side:p.side,entryTime:new Date(p.entryTime).toISOString(),entry:p.entry,sl:p.initialSL,tp:p.tp,
-      exitTime:new Date(bar.time).toISOString(),exit:price,reason,R:Number(resultR.toFixed(4)),rr:Number(p.rr.toFixed(4)),zoneDate:p.zone.pivotDate});
+      exitTime:new Date(bar.time).toISOString(),exit:price,reason,R:Number(resultR.toFixed(4)),rr:Number(p.rr.toFixed(4)),zoneDate:p.zone.pivotDate,trend:p.trend,countertrend:p.countertrend});
     // The originating zone is consumed by the entry. The target zone is consumed
     // only if price actually reaches the TP; an SL/BE exit must not mark an untouched
     // target zone as used.
@@ -176,12 +176,9 @@ function runBacktest(bars, options={}) {
       if(position||candidate){zone.used=true;continue;}
       const hour=romeCloseHour(bar);
       if(hour<startHour||hour>=endHour){rejected.outsideHours++;zone.invalid=true;continue;}
+      // Countertrend trades are allowed by the user's rules, but tagged for separate analysis.
       const trend=trendAtDate(swings,date);
-      if ((zone.side==="SHORT" && trend!=="BEARISH") || (zone.side==="LONG" && trend!=="BULLISH")) {
-        rejected.wrongTrend++;
-        zone.invalid=true;
-        continue;
-      }
+      const countertrend=(zone.side==="SHORT" && trend==="BULLISH") || (zone.side==="LONG" && trend==="BEARISH");
       const targetCandidates=zones.filter(t=>t.side!==zone.side&&!t.used&&!t.invalid&&t.createdDate<date&&
         (zone.side==="SHORT"?t.high<bar.close:t.low>bar.close))
         .sort((a,b)=>zone.side==="SHORT"?b.high-a.high:a.low-b.low);
@@ -193,7 +190,7 @@ function runBacktest(bars, options={}) {
       const reward=zone.side==="SHORT"?entry-tp:tp-entry;
       if(!(risk>0&&reward>0)){rejected.invalidRR++;zone.invalid=true;continue;}
       candidate={side:zone.side,entry,sl,initialSL:sl,tp,risk,rr:reward/risk,
-        entryTime:bar.time+3600000,zone,targetZone};
+        entryTime:bar.time+3600000,zone,targetZone,trend,countertrend};
     }
     if(candidate){position=candidate;entries++;}
   }
