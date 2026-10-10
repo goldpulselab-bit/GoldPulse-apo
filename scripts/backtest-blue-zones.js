@@ -26,41 +26,98 @@ function parseCsv(text) {
   return rows;
 }
 
+function sessionDate(time) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York", year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", hourCycle: "h23"
+  }).formatToParts(new Date(time));
+  const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
+  let key = `${p.year}-${p.month}-${p.day}`;
+  // Trading day rolls at 17:00 New York time, a common FX/metal convention.
+  // This is a proxy until the exact ActivTrades server candle boundary is confirmed.
+  if (Number(p.hour) >= 17) {
+    const d = new Date(key + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + 1);
+    key = d.toISOString().slice(0, 10);
+  }
+  return key;
+}
+
 function aggregateDaily(bars) {
   const byDay = new Map();
   for (const b of bars) {
-    const date = new Date(b.time).toISOString().slice(0,10);
-    if (!byDay.has(date)) byDay.set(date,{date,time:Date.parse(date+"T00:00:00Z"),open:b.open,high:b.high,low:b.low,close:b.close});
-    const d=byDay.get(date); d.high=Math.max(d.high,b.high); d.low=Math.min(d.low,b.low); d.close=b.close;
+    const date = sessionDate(b.time);
+    if (!byDay.has(date)) byDay.set(date, {date,time:Date.parse(date+"T00:00:00Z"),open:b.open,high:b.high,low:b.low,close:b.close});
+    const d = byDay.get(date);
+    d.high = Math.max(d.high, b.high);
+    d.low = Math.min(d.low, b.low);
+    d.close = b.close;
   }
   return [...byDay.values()].sort((a,b)=>a.time-b.time);
 }
 
 function createZones(days) {
-  const zones=[], swings=[];
-  for(let i=2;i<days.length;i++){
+  const zones = [], swings = [];
+  let latestStructuralZone = null;
+  for (let i=2; i<days.length; i++) {
     const p=days[i-1], left=days[i-2], right=days[i];
-    const isHigh=p.high>left.high&&p.high>right.high;
-    const isLow=p.low<left.low&&p.low<right.low;
-    if(!isHigh&&!isLow) continue;
-    if(isHigh&&isLow){swings.push({type:"BOTH",date:p.date,price:p.high,verticalMarker:true});continue;}
+    const isHigh=p.high>left.high && p.high>right.high;
+    const isLow=p.low<left.low && p.low<right.low;
+    if (!isHigh && !isLow) continue;
+    if (isHigh && isLow) {
+      swings.push({type:"BOTH",date:p.date,confirmDate:right.date,price:p.high,verticalMarker:true});
+      if (latestStructuralZone) latestStructuralZone.invalid = true;
+      latestStructuralZone = null;
+      continue;
+    }
     const type=isHigh?"H":"L", price=isHigh?p.high:p.low;
-    let accepted=true;
-    if(swings.length&&swings[swings.length-1].type===type){
-      const last=swings[swings.length-1];
-      const moreExtreme=type==="H"?price>last.price:price<last.price;
-      if(moreExtreme){last.date=p.date;last.price=price;} else accepted=false;
-    } else swings.push({type,date:p.date,price});
-    if(!accepted) continue;
+    const last=swings[swings.length-1];
+    if (last && last.type===type) {
+      const moreExtreme=type==="H" ? price>last.price : price<last.price;
+      if (!moreExtreme) continue;
+      // A more extreme same-type pivot replaces the current structural extreme.
+      // Keep the event history for time-correct trend reconstruction, but invalidate
+      // the zone belonging to the replaced swing.
+      if (latestStructuralZone) latestStructuralZone.invalid = true;
+      swings.push({type,date:p.date,confirmDate:right.date,price,update:true,replacesDate:last.date});
+    } else {
+      swings.push({type,date:p.date,confirmDate:right.date,price});
+      latestStructuralZone = null;
+    }
     const bodyTop=Math.max(p.open,p.close), bodyBottom=Math.min(p.open,p.close);
     const zone=isHigh
       ? {side:"SHORT",low:bodyTop,high:p.high,extreme:p.high}
       : {side:"LONG",low:p.low,high:bodyBottom,extreme:p.low};
-    if(zone.high>zone.low) zones.push({...zone,createdDate:right.date,pivotDate:p.date,used:false,invalid:false,armed:false});
+    if (zone.high>zone.low) {
+      const created={...zone,createdDate:right.date,pivotDate:p.date,used:false,invalid:false,armed:false};
+      zones.push(created);
+      latestStructuralZone=created;
+    } else latestStructuralZone=null;
   }
   return {zones,swings};
 }
 
+function trendAtDate(swings, date) {
+  const state=[];
+  for (const event of swings) {
+    if (event.confirmDate > date) continue;
+    if (event.type === "BOTH") { state.length=0; continue; }
+    const last=state[state.length-1];
+    if (last && last.type===event.type) {
+      const moreExtreme=event.type==="H" ? event.price>last.price : event.price<last.price;
+      if (moreExtreme) state[state.length-1]=event;
+    } else state.push(event);
+  }
+  const highs=state.filter(s=>s.type==="H"), lows=state.filter(s=>s.type==="L");
+  if (highs.length<2 || lows.length<2) return "NEUTRAL";
+  const risingHighs=highs.at(-1).price>highs.at(-2).price;
+  const risingLows=lows.at(-1).price>lows.at(-2).price;
+  const fallingHighs=highs.at(-1).price<highs.at(-2).price;
+  const fallingLows=lows.at(-1).price<lows.at(-2).price;
+  if (risingHighs && risingLows) return "BULLISH";
+  if (fallingHighs && fallingLows) return "BEARISH";
+  return "NEUTRAL";
+}
 function romeCloseHour(bar) {
   const closeTime=new Date(bar.time+3600000);
   return Number(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",hour:"2-digit",hourCycle:"h23"}).format(closeTime));
@@ -69,7 +126,7 @@ function romeCloseHour(bar) {
 function runBacktest(bars, options={}) {
   const startHour=options.startHour ?? 9, endHour=options.endHour ?? 18;
   const days=aggregateDaily(bars), {zones,swings}=createZones(days);
-  const trades=[], rejected={outsideHours:0,noVirginTarget:0,invalidRR:0};
+  const trades=[], rejected={outsideHours:0,noVirginTarget:0,invalidRR:0,wrongTrend:0};
   let position=null, entries=0;
   function closePosition(bar,price,reason){
     const p=position;
@@ -84,7 +141,7 @@ function runBacktest(bars, options={}) {
     position=null;
   }
   for(const bar of bars){
-    const date=new Date(bar.time).toISOString().slice(0,10);
+    const date=sessionDate(bar.time);
     if(position && bar.time>=position.entryTime){
       // OHLC cannot reveal intrabar order: if stop and target both hit, assume stop first.
       const stopHit=position.side==="LONG"?bar.low<=position.sl:bar.high>=position.sl;
@@ -119,6 +176,12 @@ function runBacktest(bars, options={}) {
       if(position||candidate){zone.used=true;continue;}
       const hour=romeCloseHour(bar);
       if(hour<startHour||hour>=endHour){rejected.outsideHours++;zone.invalid=true;continue;}
+      const trend=trendAtDate(swings,date);
+      if ((zone.side==="SHORT" && trend!=="BEARISH") || (zone.side==="LONG" && trend!=="BULLISH")) {
+        rejected.wrongTrend++;
+        zone.invalid=true;
+        continue;
+      }
       const targetCandidates=zones.filter(t=>t.side!==zone.side&&!t.used&&!t.invalid&&t.createdDate<date&&
         (zone.side==="SHORT"?t.high<bar.close:t.low>bar.close))
         .sort((a,b)=>zone.side==="SHORT"?b.high-a.high:a.low-b.low);
@@ -151,7 +214,7 @@ function runBacktest(bars, options={}) {
   };
 }
 
-module.exports={parseCsv,aggregateDaily,createZones,runBacktest};
+module.exports={parseCsv,aggregateDaily,createZones,trendAtDate,sessionDate,runBacktest};
 if(require.main===module){
   const file=process.argv[2];
   if(!file){console.error("Usage: node scripts/backtest-blue-zones.js path/to/ohlc.csv");process.exit(2);}
