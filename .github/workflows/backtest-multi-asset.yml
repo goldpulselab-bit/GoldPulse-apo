@@ -1,0 +1,44 @@
+name: Multi-asset blue-zone backtest
+on:
+  push:
+    branches:
+      - strategy-engine-prototype
+  workflow_dispatch:
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download five closed years of hourly data
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          for symbol in XAUUSD XAGUSD DAX DJ NQ SP500 WTI; do
+            mkdir -p "data/$symbol/H1"
+            for year in 2021 2022 2023 2024 2025; do
+              url="https://evtradelabs.com/api/simulator/data/$symbol/H1/$year.json.gz"
+              echo "Downloading $symbol H1 $year"
+              curl -fLsS --retry 2 --max-time 60 "$url" -o "/tmp/$symbol-$year.json.gz"
+              gzip -dc "/tmp/$symbol-$year.json.gz" > "data/$symbol/H1/$year.json"
+              test -s "data/$symbol/H1/$year.json"
+            done
+          done
+      - name: Run primitive and backtest tests
+        run: |
+          node tests/strategy-engine.test.js
+          node tests/setup-detectors.test.js
+          node tests/swing-resolver.test.js
+          node tests/backtest-blue-zones.test.js
+      - name: Run multi-asset backtest
+        run: node scripts/backtest-multi-asset.js data backtest-results
+      - name: Upload backtest results
+        uses: actions/upload-artifact@v4
+        with:
+          name: goldpulse-multi-asset-backtest-2021-2025
+          path: backtest-results/
+          if-no-files-found: error
