@@ -41,7 +41,7 @@ jobs:
         run: node scripts/summarize-development-oos.js backtest-results
       - name: Benchmark combined first-trigger portfolio
         run: node scripts/backtest-combined-first-trigger.js backtest-results
-      - name: Upload backtest results
+      - name: Research EMA RSI trend-pullback variants\n        run: node scripts/research-ema-rsi-strategy.js data backtest-results/indicator-strategy\n      - name: Upload backtest results
         uses: actions/upload-artifact@v4
         with:
           name: goldpulse-multi-asset-backtest-2021-2025
