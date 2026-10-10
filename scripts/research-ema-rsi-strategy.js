@@ -1,7 +1,7 @@
 "use strict";
 const fs=require("node:fs"),path=require("node:path");
 const SYMBOLS=["XAUUSD","XAGUSD","DAX","DJ","NQ","SP500","WTI"];
-const YEARS=[2021,2022,2023,2024,2025,2026];
+const YEARS=[2021,2022,2023,2024,2025];
 function load(symbol,root){
  const out=[];for(const y of YEARS){const f=path.join(root,symbol,"H1",y+".json");for(const r of JSON.parse(fs.readFileSync(f,"utf8"))){const b={time:+r.ts*1000,open:+r.o,high:+r.h,low:+r.l,close:+r.c};if(Number.isFinite(b.time)&&[b.open,b.high,b.low,b.close].every(Number.isFinite))out.push(b);}}
  out.sort((a,b)=>a.time-b.time);return out.filter((b,i)=>!i||b.time!==out[i-1].time);
@@ -68,7 +68,7 @@ function main(){
  fs.writeFileSync(path.join(out,"gold-parameter-grid.csv"),[gridHeader.join(","),...candidates.map(x=>[x.params.name,x.dev.trades,x.dev.winRatePct,x.dev.netR,x.dev.profitFactor,x.dev.maxDrawdownPct,x.dev.maxConsecutiveWins,x.dev.maxConsecutiveLosses,x.oos.trades,x.oos.winRatePct,x.oos.netR,x.oos.profitFactor,x.oos.maxDrawdownPct].join(","))].join("\n")+"\n");
  const chosenHeader=["symbol","variant","side","entryTime","entry","sl","tp","exitTime","exit","reason","R","entryYear"];
  fs.writeFileSync(path.join(out,"selected-trades.csv"),[chosenHeader.join(","),...tradeRows.map(t=>chosenHeader.map(k=>t[k]??"").join(","))].join("\n")+"\n");
- fs.writeFileSync(path.join(out,"selected-summary.json"),JSON.stringify({title:"EMA trend + RSI pullback H1 research",source:"EV Trading Labs historical H1 OHLC data",period:"2021-2025",selection:"A single parameter set is selected on XAUUSD 2021-2023 only, then frozen and applied to 2024-2025 and 2026. The 2026 data are a separate recent validation period; the 65% win rate is a target, never a forced outcome.",execution:"Signal on completed H1 close; enter next H1 open; ATR(14) stop; fixed TP in R; one position at a time; same-bar SL/TP assumes SL first; time exit after 24 bars; cost stress assumes 0.03R and 0.05R per trade, not broker-verified spread.",costStressRPerTrade:[0,0.03,0.05],selectedParams:best.params,developmentSelectionStats:best.dev,developmentCost003R:best.cost03,developmentCost005R:best.cost05,results},null,2));
+ fs.writeFileSync(path.join(out,"selected-summary.json"),JSON.stringify({title:"EMA trend + RSI pullback H1 research",source:"EV Trading Labs historical H1 OHLC data",period:"2021-2025",selection:"A single parameter set is selected on XAUUSD 2021-2023 only, then frozen and applied to 2024-2025. The 65% win rate is a target, never a forced outcome.",execution:"Signal on completed H1 close; enter next H1 open; ATR(14) stop; fixed TP in R; one position at a time; same-bar SL/TP assumes SL first; time exit after 24 bars; cost stress assumes 0.03R and 0.05R per trade, not broker-verified spread.",costStressRPerTrade:[0,0.03,0.05],selectedParams:best.params,developmentSelectionStats:best.dev,developmentCost003R:best.cost03,developmentCost005R:best.cost05,results},null,2));
  console.log(JSON.stringify({selectedParams:best.params,goldDevelopment:best.dev,goldOutOfSample:best.oos,goldDevelopmentCost003R:best.cost03,goldOutOfSampleCost003R:stats(best.trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025),0.03),results,gridCandidates:params.length},null,2));
 }
 main();
