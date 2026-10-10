@@ -5,10 +5,9 @@
  */
 const { aggregateDaily, createZones, sessionDate } = require("./backtest-blue-zones.js");
 
+const romeHourFormatter = new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Rome",hour:"2-digit",hourCycle:"h23"});
 function hourRomeClose(bar) {
-  return Number(new Intl.DateTimeFormat("en-GB", {
-    timeZone:"Europe/Rome", hour:"2-digit", hourCycle:"h23"
-  }).format(new Date(bar.time + 3600000)));
+  return Number(romeHourFormatter.format(new Date(bar.time + 3600000)));
 }
 function buildFibEvents(bars) {
   const days=aggregateDaily(bars);
@@ -75,11 +74,14 @@ function backtestFibonacci(bars, targetMode="ext027") {
   }
   for(const bar of bars) {
     const date=sessionDate(bar.time);
-    // A target blue zone must still be virgin at the time of entry.
-    // Mark any earlier touch/cross before evaluating new Fibonacci entries.
-    for(const z of zones) {
-      if(z.used||z.invalid||date<=z.createdDate) continue;
-      if(bar.high>=z.low&&bar.low<=z.high) z.invalid=true;
+    if(targetMode==="oppositeZone") {
+      // A target blue zone must still be virgin at the time of entry.
+      // Mark any earlier touch/cross before evaluating new Fibonacci entries.
+      for(const z of zones) {
+        if(z.used||z.invalid||date<=z.createdDate) continue;
+        if(bar.high>=z.low&&bar.low<=z.high) z.invalid=true;
+      }
+  
     }
     while(eventIndex<events.length&&events[eventIndex].activationTime<=bar.time) {
       fib={...events[eventIndex++],belowSeen:false,armed:false,confirmationExtreme:null,invalid:false};
