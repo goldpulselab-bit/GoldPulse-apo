@@ -71,7 +71,7 @@ function createZones(days) {
     if (!isHigh && !isLow) continue;
     if (isHigh && isLow) {
       swings.push({type:"BOTH",date:p.date,confirmDate:right.date,price:p.high,verticalMarker:true});
-      if (latestStructuralZone) latestStructuralZone.invalid = true;
+      if (latestStructuralZone) latestStructuralZone.invalidFromDate = right.date;
       latestStructuralZone = null;
       continue;
     }
@@ -83,7 +83,7 @@ function createZones(days) {
       // A more extreme same-type pivot replaces the current structural extreme.
       // Keep the event history for time-correct trend reconstruction, but invalidate
       // the zone belonging to the replaced swing.
-      if (latestStructuralZone) latestStructuralZone.invalid = true;
+      if (latestStructuralZone) latestStructuralZone.invalidFromDate = right.date;
       swings.push({type,date:p.date,confirmDate:right.date,price,update:true,replacesDate:last.date});
     } else {
       swings.push({type,date:p.date,confirmDate:right.date,price});
@@ -100,6 +100,10 @@ function createZones(days) {
     } else latestStructuralZone=null;
   }
   return {zones,swings};
+}
+
+function zoneInvalidAt(zone, date) {
+  return Boolean(zone.invalid || (zone.invalidFromDate && date >= zone.invalidFromDate));
 }
 
 function trendAtDate(swings, date) {
@@ -167,7 +171,7 @@ function runBacktest(bars, options={}) {
     }
     let candidate=null;
     for(const zone of zones){
-      if(zone.used||zone.invalid||date<=zone.createdDate) continue;
+      if(zone.used||zoneInvalidAt(zone,date)||date<=zone.createdDate) continue;
       const overlaps=bar.high>=zone.low&&bar.low<=zone.high;
       const closeInside=bar.close>=zone.low&&bar.close<=zone.high;
       if(!zone.armed){
@@ -188,7 +192,7 @@ function runBacktest(bars, options={}) {
       // Countertrend trades are allowed by the user's rules, but tagged for separate analysis.
       const trend=trendAtDate(swings,date);
       const countertrend=(zone.side==="SHORT" && trend==="BULLISH") || (zone.side==="LONG" && trend==="BEARISH");
-      const targetCandidates=zones.filter(t=>t.side!==zone.side&&!t.used&&!t.invalid&&t.createdDate<date&&
+      const targetCandidates=zones.filter(t=>t.side!==zone.side&&!t.used&&!zoneInvalidAt(t,date)&&t.createdDate<date&&
         (zone.side==="SHORT"?t.high<bar.close:t.low>bar.close))
         .sort((a,b)=>zone.side==="SHORT"?b.high-a.high:a.low-b.low);
       if(!targetCandidates.length){rejected.noVirginTarget++;zone.invalid=true;continue;}
@@ -220,7 +224,7 @@ function runBacktest(bars, options={}) {
   };
 }
 
-module.exports={parseCsv,aggregateDaily,createZones,trendAtDate,sessionDate,runBacktest};
+module.exports={parseCsv,aggregateDaily,createZones,trendAtDate,sessionDate,zoneInvalidAt,runBacktest};
 if(require.main===module){
   const file=process.argv[2];
   if(!file){console.error("Usage: node scripts/backtest-blue-zones.js path/to/ohlc.csv");process.exit(2);}
