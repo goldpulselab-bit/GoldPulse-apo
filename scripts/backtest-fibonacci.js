@@ -92,7 +92,11 @@ function backtestFibonacci(bars, targetMode="ext027") {
       else {
         const beHit=position.side==="LONG"?bar.high>=position.level0:bar.low<=position.level0;
         const tpHit=position.side==="LONG"?bar.high>=position.tp:bar.low<=position.tp;
-        if(beHit&&tpHit) close(bar,position.entry,"BE");
+        if(beHit&&tpHit) {
+          const returnedToEntry=position.side==="LONG"?bar.low<=position.entry:bar.high>=position.entry;
+          if(returnedToEntry) close(bar,position.entry,"BE");
+          else close(bar,position.tp,"TP");
+        }
         else if(beHit) position.sl=position.entry;
         else if(tpHit) close(bar,position.tp,"TP");
       }
