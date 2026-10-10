@@ -47,11 +47,12 @@ function aggregateDaily(bars) {
   const byDay = new Map();
   for (const b of bars) {
     const date = sessionDate(b.time);
-    if (!byDay.has(date)) byDay.set(date, {date,time:Date.parse(date+"T00:00:00Z"),open:b.open,high:b.high,low:b.low,close:b.close});
+    if (!byDay.has(date)) byDay.set(date, {date,time:Date.parse(date+"T00:00:00Z"),open:b.open,high:b.high,low:b.low,close:b.close,closeTime:b.time+3600000});
     const d = byDay.get(date);
     d.high = Math.max(d.high, b.high);
     d.low = Math.min(d.low, b.low);
     d.close = b.close;
+    d.closeTime = b.time + 3600000;
   }
   return [...byDay.values()].sort((a,b)=>a.time-b.time);
 }
