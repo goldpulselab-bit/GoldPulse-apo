@@ -34,6 +34,7 @@ jobs:
           node tests/setup-detectors.test.js
           node tests/swing-resolver.test.js
           node tests/backtest-blue-zones.test.js
+          node tests/backtest-fibonacci.test.js
       - name: Run multi-asset backtest
         run: node scripts/backtest-multi-asset.js data backtest-results
       - name: Upload backtest results
