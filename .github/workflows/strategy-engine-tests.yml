@@ -17,3 +17,4 @@ jobs:
       - run: node tests/strategy-engine.test.js
       - run: node tests/setup-detectors.test.js
       - run: node tests/swing-resolver.test.js
+      - run: node tests/backtest-blue-zones.test.js
