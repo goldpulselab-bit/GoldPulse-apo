@@ -6,6 +6,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { runBacktest } = require("./backtest-blue-zones.js");
+const { backtestFibonacci } = require("./backtest-fibonacci.js");
 
 const SYMBOLS = ["XAUUSD","XAGUSD","DAX","DJ","NQ","SP500","WTI"];
 const YEARS = [2021,2022,2023,2024,2025];
@@ -38,6 +39,7 @@ function loadSymbol(symbol, root) {
   }
   if (unique.length < 1000) throw new Error("Insufficient H1 bars for " + symbol + ": " + unique.length);
   const result = runBacktest(unique);
+  const fibonacci = Object.fromEntries(["ext027","ext0618","oppositeZone"].map(mode => [mode, backtestFibonacci(unique, mode)]));
   return {
     symbol, years:YEARS, yearCounts, dataBars:unique.length,
     from:new Date(unique[0].time).toISOString(), to:new Date(unique[unique.length-1].time).toISOString(),
@@ -45,7 +47,7 @@ function loadSymbol(symbol, root) {
     wins:result.wins, losses:result.losses, breakevens:result.breakevens,
     winRatePct:result.winRatePct, netR:result.netR, avgR:result.avgR,
     profitFactor:result.profitFactor, maxClosedTradeDrawdownR:result.maxClosedTradeDrawdownR,
-    rejected:result.rejected, trades:result.trades
+    rejected:result.rejected, trades:result.trades, fibonacci
   };
 }
 
@@ -71,6 +73,16 @@ function main() {
   const tradeRows=[tradeHeader.join(",")];
   for(const r of results) for(const t of r.trades) tradeRows.push([r.symbol,t.side,t.entryTime,t.entry,t.sl,t.tp,t.exitTime,t.exit,t.reason,t.R,t.rr,t.zoneDate].join(","));
   fs.writeFileSync(path.join(outputRoot,"trades.csv"),tradeRows.join("\n")+"\n");
-  console.log(JSON.stringify({summaryCsv:path.join(outputRoot,"summary.csv"),tradesCsv:path.join(outputRoot,"trades.csv"),results:results.map(({symbol,dataBars,closedTrades,winRatePct,netR,profitFactor,maxClosedTradeDrawdownR})=>({symbol,dataBars,closedTrades,winRatePct,netR,profitFactor,maxClosedTradeDrawdownR}))},null,2));
+  const fibSummaryHeader=["symbol","targetMode","fibEvents","closedTrades","wins","losses","breakevens","winRatePct","netR","avgR","profitFactor","maxDrawdownR"];
+  const fibSummaryRows=[fibSummaryHeader.join(",")];
+  const fibTradeHeader=["symbol","targetMode","side","entryTime","entry","sl","tp","exitTime","exit","reason","R","rr","fibBreakDate"];
+  const fibTradeRows=[fibTradeHeader.join(",")];
+  for(const r of results) for(const [mode, f] of Object.entries(r.fibonacci)) {
+    fibSummaryRows.push([r.symbol,mode,f.fibEvents,f.closedTrades,f.wins,f.losses,f.breakevens,f.winRatePct??"",f.netR,f.avgR??"",f.profitFactor??"",f.maxDrawdownR].join(","));
+    for(const t of f.trades) fibTradeRows.push([r.symbol,mode,t.side,t.entryTime,t.entry,t.sl,t.tp,t.exitTime,t.exit,t.reason,t.R,t.rr,t.fibBreakDate].join(","));
+  }
+  fs.writeFileSync(path.join(outputRoot,"fibonacci-summary.csv"),fibSummaryRows.join("\\n")+"\\n");
+  fs.writeFileSync(path.join(outputRoot,"fibonacci-trades.csv"),fibTradeRows.join("\\n")+"\\n");
+  console.log(JSON.stringify({summaryCsv:path.join(outputRoot,"summary.csv"),tradesCsv:path.join(outputRoot,"trades.csv"),results:results.map(({symbol,dataBars,closedTrades,winRatePct,netR,profitFactor,maxClosedTradeDrawdownR,fibonacci})=>({symbol,dataBars,closedTrades,winRatePct,netR,profitFactor,maxClosedTradeDrawdownR,fibonacci:Object.fromEntries(Object.entries(fibonacci).map(([mode,f])=>[mode,{closedTrades:f.closedTrades,winRatePct:f.winRatePct,netR:f.netR,profitFactor:f.profitFactor,maxDrawdownR:f.maxDrawdownR}]))}))},null,2));
 }
 main();
