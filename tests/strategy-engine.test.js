@@ -23,7 +23,7 @@ assert.equal(e.zoneTouched(zone, {high:11, low:10}), false);
 
 assert.equal(e.rewardRisk(100, 90, 120, "LONG"), 2);
 assert.equal(e.rewardRisk(100, 110, 80, "SHORT"), 2);
-assert.equal(e.rewardRisk(100, 90, 95, "LONG"), 0.5);
+assert.equal(e.rewardRisk(100, 90, 105, "LONG"), 0.5);
 assert.equal(e.rewardRisk(100, 110, 120, "LONG"), null);
 
 const stats = e.summarizeTrades([{pnl:10},{pnl:-5},{pnl:-2},{pnl:4}], 100);
