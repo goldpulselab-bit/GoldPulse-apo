@@ -39,7 +39,9 @@ jobs:
         run: node scripts/backtest-multi-asset.js data backtest-results
       - name: Split development and out-of-sample periods
         run: node scripts/summarize-development-oos.js backtest-results
-      - name: Benchmark combined first-trigger portfolio\n        run: node scripts/backtest-combined-first-trigger.js backtest-results\n      - name: Upload backtest results
+      - name: Benchmark combined first-trigger portfolio
+        run: node scripts/backtest-combined-first-trigger.js backtest-results
+      - name: Upload backtest results
         uses: actions/upload-artifact@v4
         with:
           name: goldpulse-multi-asset-backtest-2021-2025
