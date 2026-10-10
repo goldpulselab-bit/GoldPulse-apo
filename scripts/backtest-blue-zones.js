@@ -76,8 +76,11 @@ function runBacktest(bars, options={}) {
     const resultR=p.side==="SHORT"?(p.entry-price)/p.risk:(price-p.entry)/p.risk;
     trades.push({side:p.side,entryTime:new Date(p.entryTime).toISOString(),entry:p.entry,sl:p.initialSL,tp:p.tp,
       exitTime:new Date(bar.time).toISOString(),exit:price,reason,R:Number(resultR.toFixed(4)),rr:Number(p.rr.toFixed(4)),zoneDate:p.zone.pivotDate});
+    // The originating zone is consumed by the entry. The target zone is consumed
+    // only if price actually reaches the TP; an SL/BE exit must not mark an untouched
+    // target zone as used.
     p.zone.used=true;
-    if(p.targetZone) p.targetZone.used=true;
+    if(reason==="TP" && p.targetZone) p.targetZone.used=true;
     position=null;
   }
   for(const bar of bars){
