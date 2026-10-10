@@ -47,24 +47,26 @@ function run(bars,par){
 }
 function main(){
  const root=process.argv[2]||"data",out=process.argv[3]||"strategy-research";fs.mkdirSync(out,{recursive:true});
- // Small predeclared grid. Select on 2021-23 only; never rank candidates by OOS performance.
  const params=[];
  for(const trigger of [40,45,50])for(const tpR of [0.7,0.8,1.0])for(const slAtr of [1.2,1.5,1.8])for(const adxLevel of [0,18])params.push({name:"EMA50-200_RSI"+trigger+"_TP"+tpR+"_SL"+slAtr+"_ADX"+adxLevel,longTrigger:trigger,shortTrigger:100-trigger,tpR,slAtr,adx:adxLevel,maxBars:24});
- const rows=[],tradeRows=[],bestBySymbol={};
- for(const symbol of SYMBOLS){const bars=load(symbol,root);const candidates=params.map(p=>{const trades=run(bars,p),dev=trades.filter(t=>t.entryYear>=2021&&t.entryYear<=2023),oos=trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025);return {symbol,params:p,dev:stats(dev),oos:stats(oos),all:stats(trades),cost03:stats(dev,0.03),oosCost03:stats(oos,0.03),cost05:stats(dev,0.05),oosCost05:stats(oos,0.05),trades};});
-  // Selection criteria favor PF and minimum sample, with 65% as a target not a forced filter.
-  candidates.sort((a,b)=>{const score=x=>(x.dev.trades>=60&&x.dev.profitFactor>0?Math.log(Math.max(0.01,x.dev.profitFactor))+Math.min(x.dev.winRatePct||0,65)/300:-10);return score(b)-score(a);});
-  const best=candidates[0];bestBySymbol[symbol]={selectedParams:best.params,development:best.dev,outOfSample:best.oos,all:best.all,developmentCost003R:best.cost03,outOfSampleCost003R:best.oosCost03,developmentCost005R:best.cost05,outOfSampleCost005R:best.oosCost05,selectionNote:"Chosen using 2021-2023 only; selection score rewards development PF and caps WR contribution at 65%, minimum 60 development trades."};
-  for(const c of candidates){rows.push({symbol,params:c.params,development:c.dev,outOfSample:c.oos,all:c.all});}
-  for(const t of best.trades)tradeRows.push({symbol,variant:best.params.name,...t});
+ const allBars=Object.fromEntries(SYMBOLS.map(symbol=>[symbol,load(symbol,root)]));
+ const candidates=params.map(p=>{const trades=run(allBars.XAUUSD,p),dev=trades.filter(t=>t.entryYear>=2021&&t.entryYear<=2023),oos=trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025);return {params:p,dev:stats(dev),oos:stats(oos),all:stats(trades),cost03:stats(dev,0.03),oosCost03:stats(oos,0.03),cost05:stats(dev,0.05),oosCost05:stats(oos,0.05),trades};});
+ const score=x=>{const m=x.dev;if(m.trades<40||m.profitFactor===null||m.profitFactor==="Infinity")return -100+m.trades/100;return Math.log(Math.max(0.01,m.profitFactor))+Math.min(m.winRatePct||0,65)/300+Math.log(Math.max(1,m.trades)/40)/20;};
+ candidates.sort((a,b)=>score(b)-score(a));const best=candidates[0];
+ const rows=[],tradeRows=[],results={};
+ for(const symbol of SYMBOLS){
+  const trades=run(allBars[symbol],best.params),dev=trades.filter(t=>t.entryYear>=2021&&t.entryYear<=2023),oos=trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025);
+  results[symbol]={selectedParams:best.params,development:stats(dev),outOfSample:stats(oos),all:stats(trades),developmentCost003R:stats(dev,0.03),outOfSampleCost003R:stats(oos,0.03),developmentCost005R:stats(dev,0.05),outOfSampleCost005R:stats(oos,0.05),selectionNote:symbol==="XAUUSD"?"Parameters selected on XAUUSD development period 2021-2023 only.":"Same XAUUSD-selected parameters applied without re-optimizing this instrument."};
+  for(const [period,ts] of [["development",dev],["outOfSample",oos],["all",trades]])rows.push({symbol,variant:best.params.name,period,...stats(ts)});
+  for(const t of trades)tradeRows.push({symbol,variant:best.params.name,...t});
  }
  const header=["symbol","variant","period","trades","wins","losses","winRatePct","netR","avgR","profitFactor","maxDrawdownPct","maxDrawdownR","maxConsecutiveWins","maxConsecutiveLosses"];
- const flat=[];for(const r of rows)for(const [period,m] of [["development",r.development],["outOfSample",r.outOfSample],["all",r.all]])flat.push([r.symbol,r.params.name,period,...header.slice(3).map(k=>m[k]??"")]);
- fs.writeFileSync(path.join(out,"grid.csv"),[header.join(","),...flat.map(x=>x.join(","))].join("\n")+"\n");
+ fs.writeFileSync(path.join(out,"selected-summary.csv"),[header.join(","),...rows.map(r=>header.map(k=>r[k]??"").join(","))].join("\n")+"\n");
+ const gridHeader=["variant","devTrades","devWinRatePct","devNetR","devProfitFactor","devMaxDDPct","devMaxWinStreak","devMaxLossStreak","oosTrades","oosWinRatePct","oosNetR","oosProfitFactor","oosMaxDDPct"];
+ fs.writeFileSync(path.join(out,"gold-parameter-grid.csv"),[gridHeader.join(","),...candidates.map(x=>[x.params.name,x.dev.trades,x.dev.winRatePct,x.dev.netR,x.dev.profitFactor,x.dev.maxDrawdownPct,x.dev.maxConsecutiveWins,x.dev.maxConsecutiveLosses,x.oos.trades,x.oos.winRatePct,x.oos.netR,x.oos.profitFactor,x.oos.maxDrawdownPct].join(","))].join("\n")+"\n");
  const chosenHeader=["symbol","variant","side","entryTime","entry","sl","tp","exitTime","exit","reason","R","entryYear"];
  fs.writeFileSync(path.join(out,"selected-trades.csv"),[chosenHeader.join(","),...tradeRows.map(t=>chosenHeader.map(k=>t[k]??"").join(","))].join("\n")+"\n");
- fs.writeFileSync(path.join(out,"selected-summary.json"),JSON.stringify({title:"EMA trend + RSI pullback H1 research",source:"EV Trading Labs historical H1 OHLC data, same feed as prior tests",period:"2021-2025",selection:"Parameters selected only on 2021-2023. 2024-2025 is held out-of-sample.",execution:"Signal on completed H1 close; enter next H1 open; ATR(14) stop; fixed TP in R; one position at a time; same-bar SL/TP assumes SL first; time exit after 24 bars; no spread/commission/slippage/news filter.",costStressRPerTrade:[0,0.03,0.05],results:bestBySymbol},null,2));
- const brief=Object.entries(bestBySymbol).map(([symbol,x])=>({symbol,variant:x.selectedParams.name,dev:x.development,oos:x.outOfSample,all:x.all}));
- console.log(JSON.stringify({selected:brief,gridCandidates:params.length},null,2));
+ fs.writeFileSync(path.join(out,"selected-summary.json"),JSON.stringify({title:"EMA trend + RSI pullback H1 research",source:"EV Trading Labs historical H1 OHLC data",period:"2021-2025",selection:"A single parameter set is selected on XAUUSD 2021-2023 only, then frozen and applied to 2024-2025 and other instruments. The 65% win rate is a target, never a forced outcome.",execution:"Signal on completed H1 close; enter next H1 open; ATR(14) stop; fixed TP in R; one position at a time; same-bar SL/TP assumes SL first; time exit after 24 bars; cost stress assumes 0.03R and 0.05R per trade, not broker-verified spread.",costStressRPerTrade:[0,0.03,0.05],selectedParams:best.params,developmentSelectionStats:best.dev,developmentCost003R:best.cost03,developmentCost005R:best.cost05,results},null,2));
+ console.log(JSON.stringify({selectedParams:best.params,goldDevelopment:best.dev,goldOutOfSample:best.oos,goldDevelopmentCost003R:best.cost03,goldOutOfSampleCost003R:stats(best.trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025),0.03),results,gridCandidates:params.length},null,2));
 }
 main();
