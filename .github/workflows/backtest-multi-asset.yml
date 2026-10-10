@@ -37,7 +37,7 @@ jobs:
           node tests/backtest-fibonacci.test.js
       - name: Run multi-asset backtest
         run: node scripts/backtest-multi-asset.js data backtest-results
-      - name: Upload backtest results
+      - name: Split development and out-of-sample periods\n        run: node scripts/summarize-development-oos.js backtest-results\n      - name: Upload backtest results
         uses: actions/upload-artifact@v4
         with:
           name: goldpulse-multi-asset-backtest-2021-2025
