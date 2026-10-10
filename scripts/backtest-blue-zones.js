@@ -26,11 +26,15 @@ function parseCsv(text) {
   return rows;
 }
 
+const sessionFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York", year: "numeric", month: "2-digit",
+  day: "2-digit", hour: "2-digit", hourCycle: "h23"
+});
+const romeHourFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Rome", hour: "2-digit", hourCycle: "h23"
+});
 function sessionDate(time) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", hourCycle: "h23"
-  }).formatToParts(new Date(time));
+  const parts = sessionFormatter.formatToParts(new Date(time));
   const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
   let key = `${p.year}-${p.month}-${p.day}`;
   // Trading day rolls at 17:00 New York time, a common FX/metal convention.
@@ -121,7 +125,7 @@ function trendAtDate(swings, date) {
 }
 function romeCloseHour(bar) {
   const closeTime=new Date(bar.time+3600000);
-  return Number(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",hour:"2-digit",hourCycle:"h23"}).format(closeTime));
+  return Number(romeHourFormatter.format(closeTime));
 }
 
 function runBacktest(bars, options={}) {
