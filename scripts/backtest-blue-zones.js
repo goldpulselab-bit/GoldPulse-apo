@@ -156,7 +156,11 @@ function runBacktest(bars, options={}) {
         const targetHit=position.side==="LONG"?bar.high>=position.tp:bar.low<=position.tp;
         // If both BE activation and TP are inside one H1 candle, their order is unknown.
         // Use the conservative outcome: breakeven rather than assuming TP came first.
-        if(beHit && targetHit) closePosition(bar,position.entry,"BE");
+        if(beHit && targetHit) {
+          const returnedToEntry=position.side==="LONG"?bar.low<=position.entry:bar.high>=position.entry;
+          if(returnedToEntry) closePosition(bar,position.entry,"BE");
+          else closePosition(bar,position.tp,"TP");
+        }
         else if(beHit) position.sl=position.entry;
         else if(targetHit) closePosition(bar,position.tp,"TP");
       }
