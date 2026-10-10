@@ -56,7 +56,7 @@ function main(){
  const score=x=>{const m=x.dev;if(m.trades<40||m.profitFactor===null||m.profitFactor==="Infinity")return -100+m.trades/100;return Math.log(Math.max(0.01,m.profitFactor))+Math.min(m.winRatePct||0,65)/300+Math.log(Math.max(1,m.trades)/40)/20;};
  candidates.sort((a,b)=>score(b)-score(a));const best=candidates[0];
  const rows=[],tradeRows=[],results={};
- for(const symbol of SYMBOLS){
+ for(const symbol of symbolsToRun){
   const trades=run(allBars[symbol],best.params),dev=trades.filter(t=>t.entryYear>=2021&&t.entryYear<=2023),oos=trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025);
   results[symbol]={selectedParams:best.params,development:stats(dev),outOfSample:stats(oos),all:stats(trades),developmentCost003R:stats(dev,0.03),outOfSampleCost003R:stats(oos,0.03),developmentCost005R:stats(dev,0.05),outOfSampleCost005R:stats(oos,0.05),selectionNote:symbol==="XAUUSD"?"Parameters selected on XAUUSD development period 2021-2023 only.":"Same XAUUSD-selected parameters applied without re-optimizing this instrument."};
   for(const [period,ts] of [["development",dev],["outOfSample",oos],["all",trades]])rows.push({symbol,variant:best.params.name,period,...stats(ts)});
