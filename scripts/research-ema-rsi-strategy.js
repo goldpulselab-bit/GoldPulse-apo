@@ -48,12 +48,12 @@ function run(bars,par){
 function main(){
  const root=process.argv[2]||"data",out=process.argv[3]||"strategy-research";fs.mkdirSync(out,{recursive:true});
  const params=[];
- for(const trigger of [40,45,50])for(const tpR of [0.7,0.8,1.0])for(const slAtr of [1.2,1.5,1.8])for(const adxLevel of [0,18])params.push({name:"EMA50-200_RSI"+trigger+"_TP"+tpR+"_SL"+slAtr+"_ADX"+adxLevel,longTrigger:trigger,shortTrigger:100-trigger,tpR,slAtr,adx:adxLevel,maxBars:24});
+ for(const trigger of [35,40,45,50])for(const tpR of [0.4,0.5,0.6,0.7,0.8])for(const slAtr of [1.2,1.5])for(const adxLevel of [0,18,22])params.push({name:"EMA50-200_RSI"+trigger+"_TP"+tpR+"_SL"+slAtr+"_ADX"+adxLevel,longTrigger:trigger,shortTrigger:100-trigger,tpR,slAtr,adx:adxLevel,maxBars:24});
  const symbolsToRun=SYMBOLS.filter(symbol=>fs.existsSync(path.join(root,symbol,"H1","2021.json")));
  if(!symbolsToRun.includes("XAUUSD"))throw new Error("XAUUSD H1 history is required for development and out-of-sample selection.");
  const allBars=Object.fromEntries(symbolsToRun.map(symbol=>[symbol,load(symbol,root)]));
  const candidates=params.map(p=>{const trades=run(allBars.XAUUSD,p),dev=trades.filter(t=>t.entryYear>=2021&&t.entryYear<=2023),oos=trades.filter(t=>t.entryYear>=2024&&t.entryYear<=2025);return {params:p,dev:stats(dev),oos:stats(oos),all:stats(trades),cost03:stats(dev,0.03),oosCost03:stats(oos,0.03),cost05:stats(dev,0.05),oosCost05:stats(oos,0.05),trades};});
- const score=x=>{const m=x.dev;if(m.trades<40||m.profitFactor===null||m.profitFactor==="Infinity")return -100+m.trades/100;return Math.log(Math.max(0.01,m.profitFactor))+Math.min(m.winRatePct||0,65)/300+Math.log(Math.max(1,m.trades)/40)/20;};
+ const score=x=>{const m=x.dev;if(m.trades<100||m.profitFactor===null||m.profitFactor==="Infinity"||m.profitFactor<1.0)return -100+m.trades/100;return (m.winRatePct||0)+Math.min(m.profitFactor,2)*0.25+Math.log(Math.max(1,m.trades)/100)/20;};
  candidates.sort((a,b)=>score(b)-score(a));const best=candidates[0];
  const rows=[],tradeRows=[],results={};
  for(const symbol of symbolsToRun){
