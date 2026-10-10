@@ -86,7 +86,9 @@
     const riskCash = b * r / 100;
     const rawLots = riskCash / (s * pv) * 0.01;
     const rounded = Math.floor((rawLots + 1e-10) * 100) / 100;
-    const lot = Math.max(0.01, rounded);
+    const reference = balanceReferenceLot(b);
+    // The balance band is a ceiling; risk sizing can reduce it but cannot increase it.
+    const lot = Math.max(0.01, Math.min(reference, rounded));
     const actualRiskCash = s * pv * (lot / 0.01);
     return {
       lot: Number(lot.toFixed(2)),
@@ -94,8 +96,8 @@
       actualRiskCash,
       actualRiskPercent: b > 0 ? actualRiskCash / b * 100 : null,
       minimumLotExceedsRisk: actualRiskCash > riskCash + 1e-8,
-      balanceReferenceLot: balanceReferenceLot(b),
-      referenceLotExceeded: lot > balanceReferenceLot(b) + 1e-8
+      balanceReferenceLot: reference,
+      referenceLotExceeded: false
     };
   }
 
