@@ -3,7 +3,7 @@
  * Uses H1 OHLC and a proxy New York 17:00 trading-day boundary.
  * Intrabar ambiguity is handled conservatively. Not yet combined with blue-zone entries.
  */
-const { aggregateDaily, createZones, sessionDate } = require("./backtest-blue-zones.js");
+const { aggregateDaily, createZones, sessionDate, zoneInvalidAt } = require("./backtest-blue-zones.js");
 
 const romeHourFormatter = new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Rome",hour:"2-digit",hourCycle:"h23"});
 function hourRomeClose(bar) {
@@ -55,7 +55,7 @@ function backtestFibonacci(bars, targetMode="ext027") {
     if(targetMode==="ext027") return f.ext027;
     if(targetMode==="ext0618") return f.ext0618;
     if(targetMode==="oppositeZone") {
-      const opposite=zones.filter(z=>!z.used&&!z.invalid&&z.createdDate<date&&
+      const opposite=zones.filter(z=>!z.used&&!zoneInvalidAt(z,date)&&z.createdDate<date&&
         ((f.side==="LONG"&&z.side==="SHORT"&&z.low>entry)||(f.side==="SHORT"&&z.side==="LONG"&&z.high<entry)))
         .sort((a,b)=>f.side==="LONG"?a.low-b.low:b.high-a.high)[0];
       if(!opposite) return null;
@@ -78,7 +78,7 @@ function backtestFibonacci(bars, targetMode="ext027") {
       // A target blue zone must still be virgin at the time of entry.
       // Mark any earlier touch/cross before evaluating new Fibonacci entries.
       for(const z of zones) {
-        if(z.used||z.invalid||date<=z.createdDate) continue;
+        if(z.used||zoneInvalidAt(z,date)||date<=z.createdDate) continue;
         if(bar.high>=z.low&&bar.low<=z.high) z.invalid=true;
       }
   
