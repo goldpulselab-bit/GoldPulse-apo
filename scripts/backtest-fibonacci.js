@@ -75,6 +75,12 @@ function backtestFibonacci(bars, targetMode="ext027") {
   }
   for(const bar of bars) {
     const date=sessionDate(bar.time);
+    // A target blue zone must still be virgin at the time of entry.
+    // Mark any earlier touch/cross before evaluating new Fibonacci entries.
+    for(const z of zones) {
+      if(z.used||z.invalid||date<=z.createdDate) continue;
+      if(bar.high>=z.low&&bar.low<=z.high) z.invalid=true;
+    }
     while(eventIndex<events.length&&events[eventIndex].activationTime<=bar.time) {
       fib={...events[eventIndex++],belowSeen:false,armed:false,confirmationExtreme:null,invalid:false};
     }
