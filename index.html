@@ -46,11 +46,11 @@ var state=old||{balance:200,start:200,trades:[],p:{margin0:190,sl0:10.5,tp0:22,b
 if(!state.trades)state.trades=[];
 var settings={symbol:'GOLD',leverage:30,riskPct:1,slPips:100,tpPips:250,bePips:120,pipValues:{},marginBases:{},weeklyGoal:50};
 instruments.forEach(function(x){settings.pipValues[x.v]=0;settings.marginBases[x.v]=0});
-if(state.settings){Object.keys(settings).forEach(function(k){if(state.settings[k]!==undefined)settings[k]=state.settings[k]});}
+if(state.settings){Object.keys(settings).forEach(function(k){if(state.settings[k]!==undefined)settings[k]=state.settings[k]});} if(settings.symbol==='XAUUSD')settings.symbol='GOLD';
 if(!settings.pipValues)settings.pipValues={};if(!settings.marginBases)settings.marginBases={};
 instruments.forEach(function(x){if(settings.pipValues[x.v]===undefined)settings.pipValues[x.v]=0;if(settings.marginBases[x.v]===undefined)settings.marginBases[x.v]=0});
 /* Migrazione: conserva saldo e storico precedenti, congelando i dati già registrati. */
-state.trades=state.trades.map(function(t){if(!t.date)t.date='2000-01-01T00:00:00.000Z';if(!t.symbol)t.symbol='GOLD';if(!t.lot)t.lot=.01;if(t.stopPips===undefined)t.stopPips=100;if(t.tpPips===undefined)t.tpPips=250;if(t.bePips===undefined)t.bePips=120;if(t.riskPct===undefined)t.riskPct=1;if(t.leverage===undefined)t.leverage=30;if(t.pipValue===undefined)t.pipValue=0;if(t.margin===undefined)t.margin=0;return t});
+state.trades=state.trades.map(function(t){if(!t.date)t.date='2000-01-01T00:00:00.000Z';if(!t.symbol)t.symbol='GOLD';if(t.symbol==='XAUUSD')t.symbol='GOLD';if(!t.lot)t.lot=.01;if(t.stopPips===undefined)t.stopPips=100;if(t.tpPips===undefined)t.tpPips=250;if(t.bePips===undefined)t.bePips=120;if(t.riskPct===undefined)t.riskPct=1;if(t.leverage===undefined)t.leverage=30;if(t.pipValue===undefined)t.pipValue=0;if(t.margin===undefined)t.margin=0;return t});
 var $=function(id){return document.getElementById(id)};
 var euro=function(n){return '€'+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 var lotFmt=function(n){return Number(n||0).toFixed(2).replace('.',',')};
