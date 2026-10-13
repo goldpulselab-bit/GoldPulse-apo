@@ -44,7 +44,7 @@ var instruments=[
 ];
 var old=null;try{old=JSON.parse(localStorage.getItem(KEY)||'null');if(!old){for(var ki=0;ki<LEGACY_KEYS.length;ki++){var legacy=localStorage.getItem(LEGACY_KEYS[ki]);if(legacy){try{old=JSON.parse(legacy);if(old)break}catch(ignore){}}}}}catch(e){}
 var state=old||{balance:200,start:200,trades:[],p:{margin0:190,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01}};
-if(!state.trades)state.trades=[];
+if(!Array.isArray(state.trades))state.trades=[];if(!Array.isArray(state.movements))state.movements=[];if(!state.p||typeof state.p!=='object')state.p={margin0:190,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01};
 var settings={symbol:'GOLD',leverage:30,riskPct:1,entryPrice:0,stopPrice:0,slPips:0,tpPips:250,bePips:120,pipSizes:{},pipValues:{},marginBases:{},weeklyGoal:50};
 instruments.forEach(function(x){settings.pipSizes[x.v]=0;settings.pipValues[x.v]=0;settings.marginBases[x.v]=0});
 if(state.settings){Object.keys(settings).forEach(function(k){if(state.settings[k]!==undefined)settings[k]=state.settings[k]});} if(settings.symbol==='XAUUSD')settings.symbol='GOLD';
