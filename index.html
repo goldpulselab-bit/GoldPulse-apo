@@ -28,38 +28,29 @@
 'use strict';
 var KEY='gpam-v5';
 var instruments=[
-{v:'XAUUSD',n:'Gold (XAUUSD)',kind:'gold',pip:.09,margin:190},
-{v:'XAGUSD',n:'Silver (XAGUSD)',kind:'metal',pip:.09,margin:35},
-{v:'EURUSD',n:'EUR/USD',kind:'forex',pip:.09,margin:37},
-{v:'GBPUSD',n:'GBP/USD',kind:'forex',pip:.09,margin:43},
-{v:'USDJPY',n:'USD/JPY',kind:'forex',pip:.06,margin:34},
-{v:'USDCHF',n:'USD/CHF',kind:'forex',pip:.09,margin:37},
-{v:'USDCAD',n:'USD/CAD',kind:'forex',pip:.07,margin:37},
-{v:'AUDUSD',n:'AUD/USD',kind:'forex',pip:.06,margin:28},
-{v:'NZDUSD',n:'NZD/USD',kind:'forex',pip:.05,margin:25},
-{v:'GER40',n:'DAX / GER40',kind:'index',pip:0,margin:0},
-{v:'US30',n:'Dow Jones / US30',kind:'index',pip:0,margin:0},
-{v:'NAS100',n:'NASDAQ 100',kind:'index',pip:0,margin:0},
-{v:'US500',n:'S&P 500',kind:'index',pip:0,margin:0},
-{v:'UK100',n:'FTSE 100',kind:'index',pip:0,margin:0},
-{v:'EU50',n:'Euro Stoxx 50',kind:'index',pip:0,margin:0},
-{v:'FRA40',n:'CAC 40',kind:'index',pip:0,margin:0},
-{v:'JP225',n:'Nikkei 225',kind:'index',pip:0,margin:0},
-{v:'HK50',n:'Hang Seng 50',kind:'index',pip:0,margin:0},
-{v:'AUS200',n:'Australia 200',kind:'index',pip:0,margin:0},
-{v:'UKOIL',n:'Petrolio Brent',kind:'other',pip:0,margin:0},
-{v:'USOIL',n:'Petrolio WTI',kind:'other',pip:0,margin:0}
+{v:'GOLD',n:'GOLD',kind:'market',pip:0,margin:0},
+{v:'EURUSD',n:'EURUSD',kind:'market',pip:0,margin:0},
+{v:'UsaInd',n:'UsaInd',kind:'market',pip:0,margin:0},
+{v:'EURJPY',n:'EURJPY',kind:'market',pip:0,margin:0},
+{v:'GBPUSD',n:'GBPUSD',kind:'market',pip:0,margin:0},
+{v:'USDCAD',n:'USDCAD',kind:'market',pip:0,margin:0},
+{v:'USDJPY',n:'USDJPY',kind:'market',pip:0,margin:0},
+{v:'UsaTec',n:'UsaTec',kind:'market',pip:0,margin:0},
+{v:'UsaRus',n:'UsaRus',kind:'market',pip:0,margin:0},
+{v:'Usa500',n:'Usa500',kind:'market',pip:0,margin:0},
+{v:'Euro50',n:'Euro50',kind:'market',pip:0,margin:0},
+{v:'LCrude',n:'LCrude',kind:'market',pip:0,margin:0}
 ];
 var old=null;try{old=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
 var state=old||{balance:200,start:200,trades:[],p:{margin0:190,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01}};
 if(!state.trades)state.trades=[];
-var settings={symbol:'XAUUSD',leverage:30,riskPct:1,slPips:100,tpPips:250,bePips:120,pipValues:{},marginBases:{},weeklyGoal:50};
-instruments.forEach(function(x){settings.pipValues[x.v]=x.pip;settings.marginBases[x.v]=x.margin});
+var settings={symbol:'GOLD',leverage:30,riskPct:1,slPips:100,tpPips:250,bePips:120,pipValues:{},marginBases:{},weeklyGoal:50};
+instruments.forEach(function(x){settings.pipValues[x.v]=0;settings.marginBases[x.v]=0});
 if(state.settings){Object.keys(settings).forEach(function(k){if(state.settings[k]!==undefined)settings[k]=state.settings[k]});}
 if(!settings.pipValues)settings.pipValues={};if(!settings.marginBases)settings.marginBases={};
-instruments.forEach(function(x){if(settings.pipValues[x.v]===undefined)settings.pipValues[x.v]=x.pip;if(settings.marginBases[x.v]===undefined)settings.marginBases[x.v]=x.margin});
+instruments.forEach(function(x){if(settings.pipValues[x.v]===undefined)settings.pipValues[x.v]=0;if(settings.marginBases[x.v]===undefined)settings.marginBases[x.v]=0});
 /* Migrazione: conserva saldo e storico precedenti, congelando i dati già registrati. */
-state.trades=state.trades.map(function(t){if(!t.date)t.date='2000-01-01T00:00:00.000Z';if(!t.symbol)t.symbol='XAUUSD';if(!t.lot)t.lot=.01;if(t.stopPips===undefined)t.stopPips=100;if(t.tpPips===undefined)t.tpPips=250;if(t.bePips===undefined)t.bePips=120;if(t.riskPct===undefined)t.riskPct=1;if(t.leverage===undefined)t.leverage=30;if(t.pipValue===undefined)t.pipValue=.09;if(t.margin===undefined)t.margin=190;return t});
+state.trades=state.trades.map(function(t){if(!t.date)t.date='2000-01-01T00:00:00.000Z';if(!t.symbol)t.symbol='GOLD';if(!t.lot)t.lot=.01;if(t.stopPips===undefined)t.stopPips=100;if(t.tpPips===undefined)t.tpPips=250;if(t.bePips===undefined)t.bePips=120;if(t.riskPct===undefined)t.riskPct=1;if(t.leverage===undefined)t.leverage=30;if(t.pipValue===undefined)t.pipValue=0;if(t.margin===undefined)t.margin=0;return t});
 var $=function(id){return document.getElementById(id)};
 var euro=function(n){return '€'+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 var lotFmt=function(n){return Number(n||0).toFixed(2).replace('.',',')};
