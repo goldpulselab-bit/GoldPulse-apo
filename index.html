@@ -59,7 +59,7 @@ if(state.settings){Object.keys(settings).forEach(function(k){if(state.settings[k
 if(!settings.pipValues)settings.pipValues={};if(!settings.marginBases)settings.marginBases={};
 instruments.forEach(function(x){if(settings.pipValues[x.v]===undefined)settings.pipValues[x.v]=x.pip;if(settings.marginBases[x.v]===undefined)settings.marginBases[x.v]=x.margin});
 /* Migrazione: conserva saldo e storico precedenti, congelando i dati già registrati. */
-state.trades=state.trades.map(function(t){if(!t.date)t.date=new Date().toISOString();if(!t.symbol)t.symbol='XAUUSD';if(!t.lot)t.lot=.01;if(t.stopPips===undefined)t.stopPips=100;if(t.tpPips===undefined)t.tpPips=250;if(t.bePips===undefined)t.bePips=120;if(t.riskPct===undefined)t.riskPct=1;if(t.leverage===undefined)t.leverage=30;if(t.pipValue===undefined)t.pipValue=.09;if(t.margin===undefined)t.margin=190;return t});
+state.trades=state.trades.map(function(t){if(!t.date)t.date='2000-01-01T00:00:00.000Z';if(!t.symbol)t.symbol='XAUUSD';if(!t.lot)t.lot=.01;if(t.stopPips===undefined)t.stopPips=100;if(t.tpPips===undefined)t.tpPips=250;if(t.bePips===undefined)t.bePips=120;if(t.riskPct===undefined)t.riskPct=1;if(t.leverage===undefined)t.leverage=30;if(t.pipValue===undefined)t.pipValue=.09;if(t.margin===undefined)t.margin=190;return t});
 var $=function(id){return document.getElementById(id)};
 var euro=function(n){return '€'+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 var lotFmt=function(n){return Number(n||0).toFixed(2).replace('.',',')};
@@ -102,7 +102,7 @@ function newStart(){var v=num('start');if(v<0)return;if(!confirm('Confermi il nu
 document.querySelectorAll('[data-type]').forEach(function(b){b.onclick=function(){openModal(b.dataset.type)}});
 $('cancel').onclick=function(){$('modal').classList.remove('on')};$('saveTrade').onclick=commitTrade;$('saveParams').onclick=saveCurrent;$('applyStart').onclick=newStart;$('deposit').onclick=function(){movement(1)};$('withdraw').onclick=function(){movement(-1)};
 $('reset').onclick=function(){alert('Per azzerare lo storico devi applicare un nuovo saldo iniziale nella sezione qui sotto.')};
-$('symbol').onchange=function(){readSettings();syncInstrument()};
+$('symbol').onchange=function(){settings.symbol=$('symbol').value;syncInstrument()};
 ['leverage','riskPct','slPips','tpPips','bePips','pipValue','marginBase','weeklyGoal'].forEach(function(id){$(id).addEventListener('input',function(){readSettings();render()});$(id).addEventListener('change',function(){readSettings();save();render()})});
 $('start').value=state.start;populate();render();if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
 })();
