@@ -124,7 +124,7 @@ var instruments=[
 {v:'COTTON',n:'Cotton',kind:'commodity',pip:0.01,pipValue:0.01,margin:190},
 {v:'OJUICE',n:'Orange Juice',kind:'commodity',pip:0.01,pipValue:0.01,margin:190},
 {v:'OATS',n:'Oats',kind:'commodity',pip:0.01,pipValue:0.01,margin:190}
-;
+];
 var old=null;try{old=JSON.parse(localStorage.getItem(KEY)||'null');if(!old){for(var ki=0;ki<LEGACY_KEYS.length;ki++){var legacy=localStorage.getItem(LEGACY_KEYS[ki]);if(legacy){try{old=JSON.parse(legacy);if(old)break}catch(ignore){}}}}}catch(e){}
 var state=old||{balance:200,start:200,trades:[],p:{margin0:190,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01}};
 if(!Array.isArray(state.trades))state.trades=[];if(!Array.isArray(state.movements))state.movements=[];if(!state.p||typeof state.p!=='object')state.p={margin0:190,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01};
