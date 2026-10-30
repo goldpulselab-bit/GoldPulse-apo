@@ -132,6 +132,7 @@ var instruments=[
 ];
 var old=null;try{old=JSON.parse(localStorage.getItem(KEY)||'null');if(!old){for(var ki=0;ki<LEGACY_KEYS.length;ki++){var legacy=localStorage.getItem(LEGACY_KEYS[ki]);if(legacy){try{old=JSON.parse(legacy);if(old)break}catch(ignore){}}}}}catch(e){}
 var state=old||{balance:200,start:200,trades:[],movements:[],p:{margin0:0,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01}};
+['gpam-v6','gpam-v4','gpam-v3','gpam-v2','goldpulse-account-manager','goldpulse-app'].forEach(function(k){try{localStorage.removeItem(k)}catch(ignore){}});
 if(!Array.isArray(state.trades))state.trades=[];if(!Array.isArray(state.movements))state.movements=[];if(!state.p||typeof state.p!=='object')state.p={margin0:0,sl0:10.5,tp0:22,be0:10.5,threshold:500,capStep:300,lotStep:.01};
 var settings={symbol:'GOLD',leverage:30,riskPct:1,lotMode:'recommended',manualLot:0.01,entryPrice:0,stopPrice:0,tpPrice:0,slPips:0,tpPips:0,bePips:120,pipSizes:{},pipValues:{},marginBases:{},weeklyGoal:50,monthlyGoal:200,goalPeriod:'weekly',dailyLossLimit:3,chfRate:0.91992};
 instruments.forEach(function(x){settings.pipSizes[x.v]=x.pip;settings.pipValues[x.v]=x.pipValue;settings.marginBases[x.v]=x.margin});
